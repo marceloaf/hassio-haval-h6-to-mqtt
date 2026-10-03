@@ -268,6 +268,23 @@ async function sendCmd(instructions, vin) {
         );
 
         printLog(LogType.DEBUG, `sendCmd returning data: ${Buffer.from(JSON.stringify(res.data)).toString('base64')}`);
+        
+         setTimeout(async () => {
+                try {
+                    const cmdResult = await getLastCommandResult(seqNo, vin);
+                    printLog(
+                        LogType.INFO,
+                        `REMOTE COMMAND RESULT seqNo=${seqNo}: ${JSON.stringify(cmdResult)}`
+                    );
+                } catch (e) {
+                    printLog(
+                        LogType.ERROR,
+                        `Erro ao consultar resultado final do comando remoto`,
+                        e
+                    );
+                }
+            }, 10000);
+        
         return res.data;
     } catch (err) {
         printLog(LogType.ERROR, `---${UserMessages.ERROR_SENDING_COMMAND}---`, err);
