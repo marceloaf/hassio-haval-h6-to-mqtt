@@ -441,7 +441,7 @@ const carData = {
 }
 
 const carUtil = {
-    async airConditioner(action, vin) {
+   async airConditioner(action,vin,temperature = "18",operationTime = "15") {
         const actualStatus = await carData.getStatus(vin);
         let airConAction = "";
 
@@ -458,14 +458,28 @@ const carUtil = {
         else
             airConAction = Actions.AirCon.TURN_OFF;
 
+        const temp = Math.min(
+            30,
+            Math.max(16, parseInt(temperature, 10) || 18)
+        );
+       const duration =
+            action === Actions.AirCon.TURN_OFF
+                ? "0"
+                : String(
+                    Math.min(
+                        30,
+                        Math.max(5, parseInt(operationTime, 10) || 15)
+                    )
+                );
+       
         try {
             const acData = await sendCmd({
                 [Services.airCon.code]: {
                     "airConditioner": {
-                        "operationTime": airConAction === Actions.AirCon.TURN_OFF ? "0" : "15",
+                        "operationTime": duration,
                         "switchOrder": airConAction,
-                        "temperature": "18"
-                    }
+                        "temperature": String(temp)
+                    }    
                 }
             }, vin);
 
