@@ -23,6 +23,14 @@ const EntityType = {
 let topicsAndActions = JSON.parse(storage.getItem('topicsAndActions')) || {};
 let topicsToSubscribe = JSON.parse(storage.getItem('topicsToSubscribe')) || {};
 
+const getAcTemperature = (vin) => {
+  return storage.getItem(`acTemperature-${vin}`) || "18";
+};
+
+const getAcDuration = (vin) => {
+  return storage.getItem(`acDuration-${vin}`) || "15";
+};
+
 const mqttModule = {
   connect() {
     return mqtt.connect(MQTT_HOST, {
@@ -179,6 +187,118 @@ const mqttModule = {
     storage.setItem('topicsAndActions', JSON.stringify(topicsAndActions));
     storage.setItem('topicsToSubscribe', JSON.stringify(topicsToSubscribe));
   },
+  
+  /* Código para seleção de temperatura e tempo do ar condicionado */
+    registerAcControls(vin) {
+    const temperatureOptions = [
+      "16", "17", "18", "19", "20",
+      "21", "22", "23", "24", "25",
+      "26", "27", "28", "29", "30"
+    ];
+
+    const durationOptions = [
+      "5", "10", "15", "20", "25", "30"
+    ];
+
+    const controls = [
+      {
+        code: "ac_temperature",
+        name: "Temperatura do ar condicionado",
+        icon: "mdi:thermometer",
+        options: temperatureOptions,
+        defaultValue: "18",
+        action: "setAcTemperature"
+      },
+      {
+        code: "ac_duration",
+        name: "Duração do ar condicionado",
+        icon: "mdi:timer-outline",
+        options: durationOptions,
+        defaultValue: "15",
+        action: "setAcDuration"
+      }
+    ];
+
+    controls.forEach((control) => {
+      const discoveryTopic =
+        `homeassistant/select/${prefix}_${vin.toLowerCase()}_${control.code}/config`;
+
+      const commandTopic =
+        `${prefix}_${vin.toLowerCase()}/ac/${control.code}/set`;
+
+      const stateTopic =
+        `${prefix}_${vin.toLowerCase()}/ac/${control.code}/state`;
+
+      const payload = {
+        unique_id: `${prefix}_${vin.toLowerCase()}_${control.code}`,
+        default_entity_id:
+          `select.${prefix}_${vin.toLowerCase()}_${control.code}`,
+        name: control.name,
+        icon: control.icon,
+        command_topic: commandTopic,
+        state_topic: stateTopic,
+        options: control.options,
+        device: {
+          identifiers: [vin.toUpperCase()],
+          name: vin.toUpperCase(),
+          model: "BR",
+          manufacturer: "GWM"
+        }
+      };
+
+      mqttModule.sendMqtt(
+        discoveryTopic,
+        JSON.stringify(payload),
+        { retain: true }
+      );
+
+      const storageKey =
+        control.action === "setAcTemperature"
+          ? `acTemperature-${vin}`
+          : `acDuration-${vin}`;
+
+      let currentValue = storage.getItem(storageKey);
+
+      if (!currentValue) {
+        currentValue = control.defaultValue;
+        storage.setItem(storageKey, currentValue);
+      }
+
+      mqttModule.sendMqtt(
+        stateTopic,
+        String(currentValue),
+        { retain: true }
+      );
+
+      const key =
+        `select_${vin.toLowerCase()}_${control.code}`;
+
+      topicsAndActions[key] = {
+        action: control.action,
+        topic_to_monitor_parent: "",
+        topic_to_monitor_actionable: commandTopic,
+        topic_to_update: stateTopic,
+        parent_attributes: "",
+        link_type: "value",
+        vin: vin
+      };
+
+      topicsToSubscribe[key] = {
+        topic: commandTopic
+      };
+    });
+
+    storage.setItem(
+      'topicsAndActions',
+      JSON.stringify(topicsAndActions)
+    );
+
+    storage.setItem(
+      'topicsToSubscribe',
+      JSON.stringify(topicsToSubscribe)
+    );
+  },
+  
   sendDeviceTrackerUpdate(vin, latitude, longitude, attributes) {
     const json_attributes_topic = `homeassistant/device_tracker/${prefix}_${vin.toLowerCase()}/attributes`;
     const gpsData = {
@@ -216,19 +336,77 @@ const ActionableAndLink = {
         });
       });
 
-      client.on('message', async (topic, message) => {
-        let messageValue = message.toString().toUpperCase();
+    client.on('message', async (topic, message) => {
+      const rawMessageValue = message.toString();
+      let messageValue = rawMessageValue.toUpperCase();
 
         Object.keys(topicsAndActions).forEach(async function (key) {
           if (topic === String(topicsAndActions[key].topic_to_monitor_actionable)) {
             if (storage.getItem('Startup') == "true") return;
 
             const actions = {
+              setAcTemperature: async () => {
+                const value = parseInt(rawMessageValue, 10);
+                if (isNaN(value) || value < 16 || value > 30) {
+                  return {
+                    result: false,
+                    message: "Temperatura inválida para o ar-condicionado."
+                  };
+                }
+                storage.setItem(
+                  `acTemperature-${topicsAndActions[key].vin}`,
+                  String(value)
+                );
+                mqttModule.sendMqtt(
+                  topicsAndActions[key].topic_to_update,
+                  String(value),
+                  { retain: true }
+                );
+                return { result: true };
+              },        
+              setAcDuration: async () => {
+                const value = parseInt(rawMessageValue, 10);
+                if (![5, 10, 15, 20, 25, 30].includes(value)) {
+                  return {
+                    result: false,
+                    message: "Duração inválida para o ar-condicionado."
+                  };
+                }
+                storage.setItem(
+                  `acDuration-${topicsAndActions[key].vin}`,
+                  String(value)
+                );
+                mqttModule.sendMqtt(
+                  topicsAndActions[key].topic_to_update,
+                  String(value),
+                  { retain: true }
+                );
+                return { result: true };
+              },
               airConditioner: async () => {
-                return await carConnector.carUtil.airConditioner(carConnector.Actions.AirCon.TURN_ON, topicsAndActions[key].vin);
+                const vin = topicsAndActions[key].vin;
+              
+                const temperature = getAcTemperature(vin);
+                const duration = getAcDuration(vin);
+              
+                return await carConnector.carUtil.airConditioner(
+                  carConnector.Actions.AirCon.TURN_ON,
+                  vin,
+                  temperature,
+                  duration
+                );
               },
               airConditionerOff: async () => {
-                return await carConnector.carUtil.airConditioner(carConnector.Actions.AirCon.TURN_OFF,topicsAndActions[key].vin);
+                const vin = topicsAndActions[key].vin;
+              
+                const temperature = getAcTemperature(vin);
+              
+                return await carConnector.carUtil.airConditioner(
+                  carConnector.Actions.AirCon.TURN_OFF,
+                  vin,
+                  temperature,
+                  "0"
+                );
               },
               engineOn: async () => {
                 return await carConnector.carUtil.engine(carConnector.Actions.Engine.TURN_ON, topicsAndActions[key].vin);
@@ -292,8 +470,18 @@ const ActionableAndLink = {
               }
             };
 
-            const action = actions[String(topicsAndActions[key].action)];
-            if (action && String(messageValue) === (String(topicsAndActions[key].link_type) === "press" ? 'PRESS' : 'ON')) {
+              const action = actions[String(topicsAndActions[key].action)];
+              
+              const linkType = String(topicsAndActions[key].link_type);
+              
+              const shouldExecute =
+                linkType === "value" ||
+                (linkType === "press" && String(messageValue) === "PRESS") ||
+                (linkType !== "press" &&
+                 linkType !== "value" &&
+                 String(messageValue) === "ON");
+              
+              if (action && shouldExecute) {
               try {
                 const data = await action();
                 if (data && data.result === false) {
@@ -308,7 +496,10 @@ const ActionableAndLink = {
 
                 if (data) SendStatusMessage(topicsAndActions[key].vin, data);
 
-                if (typeof ActionableAndLink.onActionExecutedCallback === "function") {
+                if (
+                  linkType !== "value" &&
+                  typeof ActionableAndLink.onActionExecutedCallback === "function"
+                ) {
                   ActionableAndLink.onActionExecutedCallback();
                 }
               } catch (e) {
