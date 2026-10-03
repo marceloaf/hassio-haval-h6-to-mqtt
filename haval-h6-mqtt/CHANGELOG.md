@@ -1,4 +1,9 @@
 # Changelog
+## [1.0.9] - 2026-10-03
+## Modificado
+- Acrescentado comando para desligar o ar condicionado
+- Acrescentadas opções para definir temperatura e tempo quando o ar-condicionado é ligado
+
 ## [1.0.8] - 2026-08-27
 ## Modificado
 - Atualização temporária do tempo de atualização (refresh_time) para 5 segundos durante 1 minuto após a execução bem-sucedida de um comando remoto (ActionableAndLink).
