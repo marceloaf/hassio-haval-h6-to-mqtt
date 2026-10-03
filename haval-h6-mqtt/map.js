@@ -234,20 +234,29 @@ const sensorTopics = {
     state_connected: "1",
     state_disconnected: "0"
   },
-  2202001: {
-    description: "Estado do Ar Condicionado",
-    device_class: "cold",
-    entity_type: "binary_sensor",
-    icon: "mdi:air-conditioner",
-    state_on: "1",
-    state_off: "0",
-    actionable: {
+2202001: {
+  description: "Estado do Ar Condicionado",
+  device_class: "cold",
+  entity_type: "binary_sensor",
+  icon: "mdi:air-conditioner",
+  state_on: "1",
+  state_off: "0",
+  actionable: [
+    {
       action: "airConditioner",
-      description: "Ativação do ar condicionado",
+      description: "Ligar ar condicionado",
       entity_type: "button",
       icon: "mdi:fan-clock",
-      link_type: "press", //(sync: sincroniza os status, toggle: invertido, press: acionamento sem sincronização)
+      link_type: "press",
+    },
+    {
+      action: "airConditionerOff",
+      description: "Desligar ar condicionado",
+      entity_type: "button",
+      icon: "mdi:fan-off",
+      link_type: "press",
     }
+  ]
   },
   2202099: {
     description: "Estado do Purificador de Ar",
