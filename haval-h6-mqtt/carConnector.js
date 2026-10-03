@@ -484,7 +484,7 @@ const carUtil = {
             const acData = await sendCmd({
                 [Services.airCon.code]: {
                     "airConditioner": {
-                        "operationTime": "15",
+                        "operationTime": airConAction === Actions.AirCon.TURN_OFF ? "0" : "15",
                         "switchOrder": airConAction,
                         "temperature": "18"
                     }
