@@ -1,6 +1,6 @@
 {
   "name": "GWM Brasil com MQTT - MF",
-  "version": "1.0.8.2",
+  "version": "1.0.8.3",
   "slug": "hassio_haval_h6_to_mqtt",
   "description": "Integração Customizada com o Home Assistant usando MQTT para veículos GWM.",
   "init": false,
