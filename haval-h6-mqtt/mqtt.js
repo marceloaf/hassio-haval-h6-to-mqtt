@@ -227,6 +227,9 @@ const ActionableAndLink = {
               airConditioner: async () => {
                 return await carConnector.carUtil.airConditioner(carConnector.Actions.AirCon.TURN_ON, topicsAndActions[key].vin);
               },
+              airConditionerOff: async () => {
+                return await carConnector.carUtil.airConditioner(carConnector.Actions.AirCon.TURN_OFF,topicsAndActions[key].vin);
+              },
               engineOn: async () => {
                 return await carConnector.carUtil.engine(carConnector.Actions.Engine.TURN_ON, topicsAndActions[key].vin);
               },
