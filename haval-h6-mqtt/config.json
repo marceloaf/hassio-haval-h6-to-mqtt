@@ -11,7 +11,7 @@
     "amd64",
     "i386"
   ],
-  "url": "https://github.com/havaleiros/hassio-haval-h6-to-mqtt",
+  "url": "https://github.com/marceloaf/hassio-haval-h6-to-mqtt",
   "map": [
     "config:rw"
   ],

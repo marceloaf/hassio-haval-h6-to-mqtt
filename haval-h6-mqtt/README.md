@@ -32,7 +32,7 @@ Se você está começando, recomendamos pesquisar no YouTube por tutoriais sobre
 2. Navegue até **Supervisor** no menu lateral.
 3. Selecione a aba **Add-on Store**.
 4. Clique nos três pontos no canto superior direito e selecione **Repositórios**.
-5. Adicione a URL do repositório do add-on: https://github.com/havaleiros/hassio-haval-h6-to-mqtt
+5. Adicione a URL do repositório do add-on: https://github.com/marceloaf/hassio-haval-h6-to-mqtt
 6. Clique em **Adicionar** e, em seguida, feche a janela de repositórios.
 
 #### 2. Instalando o Add-on
@@ -133,7 +133,7 @@ sudo nano docker-compose.yaml
         condition: service_healthy
     restart: always
     volumes:
-      - /opt/hassio-haval-h6-to-mqtt/data:/hassio-haval-h6-to-mqtt/data
+      - /opt/hassio-haval-h6-to-mqtt/data:/data
     env_file:
       - /opt/hassio-haval-h6-to-mqtt/haval-h6.env
     command: >
@@ -166,7 +166,7 @@ Utilizar um novo dashboard evita edição e impactos em dashboards existentes.
 
 #### Adicionando Imagens do Veículo
 
-1. Baixe o arquivo [Baixe aqui o arquivo haval_h6.zip](https://github.com/havaleiros/hassio-haval-h6-to-mqtt/raw/main/haval-h6-mqtt/files/haval_h6.zip).
+1. Baixe o arquivo [Baixe aqui o arquivo haval_h6.zip](https://github.com/marceloaf/hassio-haval-h6-to-mqtt/raw/main/haval-h6-mqtt/files/haval_h6.zip).
 2. Descompacte o arquivo e salve as imagens na pasta `www/images/haval_h6` do Home Assistant.
 
 O resultado esperado é que as imagens fiquem no caminho `www/images/haval_h6/[imagem].png`. Dependendo da ferramenta utilizada, o caminho pode ser exibido como `homeassistant/www/images/haval_h6/[imagem].png`.
@@ -234,10 +234,24 @@ Caso não funcione como esperado, siga os 3 primeiros passos abaixo.
 6. Na nova linha criada com o novo dashboard, clique em _ABRIR_.
 7. No canto superior esquerdo da tela, clique em _Editar dashboard_.
 8. Clique novamente no símbolo com 3 pontos verticais e depois em _Editor de configuração RAW_.
-9. Apague o conteúdo existente que será exibido, copie o conteúdo do arquivo `HomeAssistant_Dashboard_GWM.yaml` fornecido como template e cole nesta tela. [Baixe aqui o arquivo YAML](https://github.com/havaleiros/hassio-haval-h6-to-mqtt/blob/main/haval-h6-mqtt/files/HomeAssistant_Dashboard_GWM.yaml). Consulte sempre a data de atualização do arquivo para identificar se há uma versão mais recente.
+9. Apague o conteúdo existente que será exibido, copie o conteúdo do arquivo `HomeAssistant_Dashboard_GWM.yaml` fornecido como template e cole nesta tela. [Baixe aqui o arquivo YAML](https://github.com/marceloaf/hassio-haval-h6-to-mqtt/blob/main/haval-h6-mqtt/files/HomeAssistant_Dashboard_GWM.yaml). Consulte sempre a data de atualização do arquivo para identificar se há uma versão mais recente.
 
 Agora, seu novo dashboard estará configurado para exibir informações detalhadas sobre o seu veículo GWM.
-Você poderá, além de monitorar as informações do veículo, ligar o ar-condicionado e interromper o carregamento para soltar o plugue do carregador antes da finalização da carga.
+
+#### Controle do ar-condicionado
+
+O dashboard permite controlar remotamente a climatização do veículo.
+
+Estão disponíveis:
+
+- Seleção da temperatura desejada entre 16 °C e 30 °C.
+- Seleção do tempo de funcionamento entre 5 e 30 minutos.
+- Comando para ligar o ar-condicionado.
+- Comando para desligar o ar-condicionado.
+
+Os valores selecionados de temperatura e duração são armazenados de forma persistente e permanecem após a reinicialização do add-on ou do Home Assistant.
+
+A disponibilidade dos sensores depende dos dados fornecidos pela API da GWM para cada modelo de veículo. Por exemplo, a temperatura da cabine somente será exibida quando esse dado estiver disponível na API.
 
 Nota 1: Para o funcionamento do mapa com filtro por data, clique no botão abaixo e importe a automação para sua instância do Home Assistant. 
 Acesse `Configurações` > `Automações & Cenas` > `Modelos Blueprints`, escolha a opção `Criar Sensor de Energia Dummy (fixo) no Startup` e clique em `Salvar`. Ao retornar para a tela anterior haverá o indicador na coluna `Em uso` com o número 1 caso a automação tenha sido criada.
