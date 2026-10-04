@@ -23,12 +23,27 @@ const EntityType = {
 let topicsAndActions = JSON.parse(storage.getItem('topicsAndActions')) || {};
 let topicsToSubscribe = JSON.parse(storage.getItem('topicsToSubscribe')) || {};
 
+const normalizeVin = (vin) =>
+  String(vin || "").trim().toUpperCase();
+
 const getAcTemperature = (vin) => {
-  return storage.getItem(`acTemperature-${vin}`) || "18";
+  const key = `acTemperature-${normalizeVin(vin)}`;
+  return storage.getItem(key) || "18";
 };
 
 const getAcDuration = (vin) => {
-  return storage.getItem(`acDuration-${vin}`) || "15";
+  const key = `acDuration-${normalizeVin(vin)}`;
+  return storage.getItem(key) || "15";
+};
+
+const setAcTemperature = (vin, value) => {
+  const key = `acTemperature-${normalizeVin(vin)}`;
+  storage.setItem(key, String(value));
+};
+
+const setAcDuration = (vin, value) => {
+  const key = `acDuration-${normalizeVin(vin)}`;
+  storage.setItem(key, String(value));
 };
 
 const mqttModule = {
@@ -252,10 +267,12 @@ const mqttModule = {
         { retain: true }
       );
 
+      const normalizedVin = normalizeVin(vin);
+
       const storageKey =
         control.action === "setAcTemperature"
-          ? `acTemperature-${vin}`
-          : `acDuration-${vin}`;
+          ? `acTemperature-${normalizedVin}`
+          : `acDuration-${normalizedVin}`;
 
       let currentValue = storage.getItem(storageKey);
 
@@ -353,10 +370,9 @@ const ActionableAndLink = {
                     message: "Temperatura inválida para o ar-condicionado."
                   };
                 }
-                storage.setItem(
-                  `acTemperature-${topicsAndActions[key].vin}`,
-                  String(value)
-                );
+                
+                setAcTemperature(topicsAndActions[key].vin, value);
+                
                 mqttModule.sendMqtt(
                   topicsAndActions[key].topic_to_update,
                   String(value),
@@ -372,9 +388,9 @@ const ActionableAndLink = {
                     message: "Duração inválida para o ar-condicionado."
                   };
                 }
-                storage.setItem(
-                  `acDuration-${topicsAndActions[key].vin}`,
-                  String(value)
+                setAcDuration(
+                  topicsAndActions[key].vin,
+                  value
                 );
                 mqttModule.sendMqtt(
                   topicsAndActions[key].topic_to_update,
@@ -389,6 +405,11 @@ const ActionableAndLink = {
                 const temperature = getAcTemperature(vin);
                 const duration = getAcDuration(vin);
               
+                printLog(
+                  LogType.INFO,
+                  `AC SETTINGS -> VIN=${vin}, temperature=${temperature}, duration=${duration}`
+                );
+                
                 return await carConnector.carUtil.airConditioner(
                   carConnector.Actions.AirCon.TURN_ON,
                   vin,

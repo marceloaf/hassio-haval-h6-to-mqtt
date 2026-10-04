@@ -472,6 +472,11 @@ const carUtil = {
                     )
                 );
        
+        printLog(
+            LogType.INFO,
+            `AC PAYLOAD SETTINGS -> action=${action}, temperature=${temp}, operationTime=${duration}`
+        );
+                
         try {
             const acData = await sendCmd({
                 [Services.airCon.code]: {
