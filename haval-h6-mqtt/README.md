@@ -26,7 +26,7 @@ Se você está começando, recomendamos pesquisar no YouTube por tutoriais sobre
 
 #### 1. Adicionando o Repositório do Add-on manualmente
 
-[![Adicionar este add-on ao Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fhavaleiros%2Fhassio-haval-h6-to-mqtt)
+[![Adicionar este add-on ao Home Assistant](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fmarceloaf%2Fhassio-haval-h6-to-mqtt)
 
 1. Acesse a interface web do Home Assistant.
 2. Navegue até **Supervisor** no menu lateral.
@@ -127,7 +127,7 @@ sudo nano docker-compose.yaml
 ```yaml
   hassio-haval-h6-to-mqtt:
     container_name: hassio-haval-h6-to-mqtt
-    image: ghcr.io/havaleiros/hassio-haval-h6-to-mqtt:latest
+    image: ghcr.io/marceloaf/hassio-haval-h6-to-mqtt:latest
     depends_on:
       mosquitto:
         condition: service_healthy
@@ -166,7 +166,7 @@ Utilizar um novo dashboard evita edição e impactos em dashboards existentes.
 
 #### Adicionando Imagens do Veículo
 
-1. Baixe o arquivo [Baixe aqui o arquivo haval_h6.zip](https://github.com/marceloaf/hassio-haval-h6-to-mqtt/raw/main/haval-h6-mqtt/files/haval_h6.zip).
+1. Baixe o arquivo [Baixe aqui o arquivo haval_h6.zip](https://github.com/havaleiros/hassio-haval-h6-to-mqtt/raw/main/haval-h6-mqtt/files/haval_h6.zip).
 2. Descompacte o arquivo e salve as imagens na pasta `www/images/haval_h6` do Home Assistant.
 
 O resultado esperado é que as imagens fiquem no caminho `www/images/haval_h6/[imagem].png`. Dependendo da ferramenta utilizada, o caminho pode ser exibido como `homeassistant/www/images/haval_h6/[imagem].png`.
