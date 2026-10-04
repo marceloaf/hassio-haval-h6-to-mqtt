@@ -1,2 +1,2 @@
 const { LocalStorage } = require("node-localstorage");
-module.exports = new LocalStorage("./storage");
+module.exports = new LocalStorage("/data/storage");
