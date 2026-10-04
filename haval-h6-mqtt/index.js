@@ -190,11 +190,20 @@ validationSchema.validate(process.env)
             data.items.map(item => String(item.code))
           );
 
+          const isHaval =
+          String(carList[key].appShowSeriesName || "")
+            .toUpperCase()
+            .includes("HAVAL");
+
           Object.keys(sensorTopics).forEach((code) => {
 
             // Para o Haval H6, só registra temperatura da cabine
             // se o datapoint 2201001 realmente vier da API
-            if (code === "2201001" && !availableCodes.has("2201001")) {
+            if (
+              isHaval &&
+              code === "2201001" &&
+              !availableCodes.has("2201001")
+            ) {
               return;
             }
 

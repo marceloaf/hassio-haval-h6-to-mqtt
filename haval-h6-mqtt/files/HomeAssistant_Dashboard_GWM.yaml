@@ -5,7 +5,7 @@ views:
   - type: panel
     path: gwm-dashboard
     title: GWM Dashboard
-    icon: mdi:car-electric
+    icon: mdi:car-electric-outline
     cards:
       - type: custom:config-template-card
         entities:
@@ -13,6 +13,8 @@ views:
           - binary_sensor.gwmbrasil_${VEICULO}_agendamento_de_carga
           - binary_sensor.gwmbrasil_${VEICULO}_estado_da_trava
           - binary_sensor.gwmbrasil_${VEICULO}_estado_do_ar_condicionado
+          - select.gwmbrasil_${VEICULO}_temperatura_do_ar_condicionado
+          - select.gwmbrasil_${VEICULO}_duracao_do_ar_condicionado
           - binary_sensor.gwmbrasil_${VEICULO}_estado_do_controle_de_carga
           - binary_sensor.gwmbrasil_${VEICULO}_estado_do_purificador_de_ar
           - binary_sensor.gwmbrasil_${VEICULO}_porta_dianteira_direita
@@ -48,6 +50,7 @@ views:
           - sensor.gwmbrasil_${VEICULO}_vidro_traseiro_direito
           - sensor.gwmbrasil_${VEICULO}_vidro_traseiro_esquerdo
           - button.gwmbrasil_${VEICULO}_ativacao_do_ar_condicionado
+          - button.gwmbrasil_${VEICULO}_desligar_ar_condicionado
           - button.gwmbrasil_${VEICULO}_interromper_carregamento
           - button.gwmbrasil_${VEICULO}_historico_de_carregamento
           - sensor.gwmbrasil_${VEICULO}_status_message
@@ -1508,58 +1511,112 @@ views:
               cards:
                 - type: entities
                   entities:
-                    - entity: sensor.gwmbrasil_${VEICULO}_temperatura_da_cabine
+                    - type: custom:template-entity-row
+                      entity: sensor.gwmbrasil_${VEICULO}_temperatura_da_cabine
                       name: Temperatura da cabine
+                      card_mod:
+                        style: |
+                          :host {
+                            {% set temp = states('sensor.gwmbrasil_${VEICULO}_temperatura_da_cabine') %}
+                            display: {% if temp in ['unknown', 'unavailable', '', 'none'] %}
+                              none
+                            {% else %}
+                              block
+                            {% endif %} !important;
+                          }
                     - type: custom:template-entity-row
                       entity: >-
                         binary_sensor.gwmbrasil_${VEICULO}_estado_do_ar_condicionado
                       name: Ar Condicionado
-                      state: >-
+                      icon: mdi:air-conditioner
+                      state: |-
                         ${
-                        states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
-                        === 'off' ? 'Desligado' :
-                        states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
-                        === 'on' ? 'Ligado' : 'Desconhecido'}
+                          states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
+                          === 'off' ? 'Desligado' :
+                          states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
+                          === 'on' ? 'Ligado' : 'Desconhecido'
+                        }
+                      color: |-
+                        ${
+                          states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
+                          === 'on' ? '#03a9f4' : ''
+                        }
+                    - type: custom:mushroom-select-card
+                      entity: >-
+                        select.gwmbrasil_${VEICULO}_temperatura_do_ar_condicionado
+                      name: Temperatura desejada
+                      icon: mdi:thermometer
+                      layout: horizontal
+                    - type: custom:mushroom-select-card
+                      entity: select.gwmbrasil_${VEICULO}_duracao_do_ar_condicionado
+                      name: Duração
+                      icon: mdi:timer-outline
+                      layout: horizontal
                     - type: custom:mushroom-template-card
                       primary: Ligar A/C
-                      icon: mdi:fan-clock
-                      secondary: Acionar por 15 minutos em 18°C
+                      secondary: >-
+                        ${states['select.gwmbrasil_'+VEICULO.toLowerCase()+'_temperatura_do_ar_condicionado'].state
+                        + ' °C • ' +
+                        states['select.gwmbrasil_'+VEICULO.toLowerCase()+'_duracao_do_ar_condicionado'].state
+                        + ' minutos'}
+                      icon: mdi:fan
                       entity: button.gwmbrasil_${VEICULO}_ativacao_do_ar_condicionado
-                      hold_action:
-                        action: none
                       tap_action:
                         action: toggle
                         confirmation:
                           text: >-
                             Tem certeza de que deseja ligar o ar condicionado? O
-                            veículo tem que estar trancado, desligado e, para
-                            modelos PHEV, não pode estar em carregamento ou com
-                            o plugue conectado.
+                            veículo deve estar trancado e desligado e, para
+                            modelos PHEV, não pode estar carregando ou com o
+                            plugue conectado.
+                      hold_action:
+                        action: none
                       card_mod:
-                        style: >
+                        style: |
                           :host {
                             display: ${
-                          states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
+                              states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
+                              === 'on' ? 'none' :
 
-                          === 'on' ? 'none' :
+                              states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_da_trava'].state
+                              === 'on' ? 'none' :
 
-                          states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_da_trava'].state
-
-                          === 'on' ? 'none' :
-
-                          states['sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_motor'].state
-
-                          === '1' ? 'none' : 'block' }
+                              states['sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_motor'].state
+                              === '1' ? 'none' : 'block'
+                            };
+                          }
+                    - type: custom:mushroom-template-card
+                      primary: Desligar A/C
+                      secondary: Interromper climatização
+                      icon: mdi:fan-off
+                      entity: button.gwmbrasil_${VEICULO}_desligar_ar_condicionado
+                      tap_action:
+                        action: toggle
+                        confirmation:
+                          text: >-
+                            Tem certeza de que deseja desligar o ar
+                            condicionado?
+                      hold_action:
+                        action: none
+                      card_mod:
+                        style: |
+                          :host {
+                            display: ${
+                              states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_ar_condicionado'].state
+                              === 'on' ? 'block' : 'none'
+                            };
+                          }
                     - type: custom:template-entity-row
                       entity: >-
                         binary_sensor.gwmbrasil_${VEICULO}_estado_do_purificador_de_ar
                       name: Purificador de ar
-                      state: >-
+                      state: |-
                         ${
-                        states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_purificador_de_ar'].state
-                        === 'off' ? 'Desligado' :
-                        states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_purificador_de_ar'].state
-                        === 'on' ? 'Ligado' : 'Desconhecido'}
+                          states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_purificador_de_ar'].state
+                          === 'off' ? 'Desligado' :
+                          states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_purificador_de_ar'].state
+                          === 'on' ? 'Ligado' : 'Desconhecido'
+                        }
                       card_mod:
                         style: |
                           :host {
@@ -1567,11 +1624,11 @@ views:
                             {% if 'TANK' in modelo %}
                               display: none
                             {% endif %} !important;
-                          }              
+                          }
                   card_mod:
                     style: |
                       ha-card {
-                        background: none !important /*bg*/;
+                        background: none !important;
                         border-radius: 6px;
                       }
                 - type: entities
@@ -1834,12 +1891,14 @@ views:
                     name: ' '
                   - type: map
                     tile_layer_options:
-                      referrerPolicy: "origin-when-cross-origin"
+                      referrerPolicy: origin-when-cross-origin
                     entities:
                       - entity: device_tracker.gwmbrasil_${VEICULO}
-                    theme_mode: dark
+                      - entity: zone.bamaq_gwm
+                      - entity: zone.home
+                    theme_mode: auto
                     default_zoom: 16
-                    hours_to_show: 30
+                    hours_to_show: 24
                     auto_fit: true
                     aspect_ratio: '16:9'
                     card_mod:
@@ -2530,7 +2589,7 @@ views:
                   position: absolute;
                   height: 80px !important;
                   width: 80%;
-                  top: 75px;
+                  top: 125px;
                   right: 10px;
                   max-width: 450px;
                   color: white;
@@ -2549,7 +2608,7 @@ views:
               type: custom:map-card
               history_date_selection: true
               tile_layer_options:
-                referrerPolicy: "origin-when-cross-origin"
+                referrerPolicy: origin-when-cross-origin
               card_mod:
                 style: |
                   ha-card {
@@ -2574,4 +2633,7 @@ views:
     cards:
       - type: iframe
         aspect_ratio: 100%
-        url: https://br-h5-abroad-community.gwmcloud.com/br-vr/
+        url: https://br-h5-abroad-community.gwmcloud.com/br-vr/?name=NOVOH6PHEV19
+    visible:
+      - user: a1f9eaea0fc4461181bb340cd18d4a91
+      - user: c7cd847201474db28650cc0086d669f4

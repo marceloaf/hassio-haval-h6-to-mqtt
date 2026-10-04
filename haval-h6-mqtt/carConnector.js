@@ -229,7 +229,7 @@ async function sendCmd(instructions, vin) {
             lastResult = await getLastCommandResult(lastCommand.seqNo, vin);
 
             if (lastResult) {
-                if (!['6', '10'].includes(lastResult.resultCode)) {
+                if (!['0','6', '10'].includes(lastResult.resultCode)) {
                     const service = Object.values(Services).find(s => s.code === lastResult.remoteType);
                     const description = service ? service.description : UserMessages.UNKNOWN_COMMAND;
                     const retData = {

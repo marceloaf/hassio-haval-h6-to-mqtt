@@ -1,10 +1,11 @@
 # Changelog
-## [1.0.10.3] - 2026-10-04
+## [1.0.9] - 2026-10-04
 ## Modificado
 - Acrescentado comando para desligar o ar condicionado
-- Acrescentadas opções para definir temperatura e tempo de funcionamento do ar condicionado quando o ar condicionado é ligado
-- Os valores de temperatura e tempo de funcionamento do ar condicionado permanecem após reinicialização do add-on ou do home assistant
-- O sensor de temperatura da cabine deixa de aparecer caso não venha valor da API
+- Ajustes no dashboard
+    - Acrescentadas opções para definir temperatura e tempo de funcionamento do ar condicionado quando o ar condicionado é ligado
+    - Os valores de temperatura e tempo de funcionamento do ar condicionado permanecem após reinicialização do add-on ou do home assistant
+    - O sensor de temperatura da cabine deixa de aparecer caso não venha valor da API
 
 ## [1.0.8] - 2026-08-27
 ## Modificado

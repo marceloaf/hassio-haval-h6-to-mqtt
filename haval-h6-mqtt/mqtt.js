@@ -205,7 +205,16 @@ const mqttModule = {
   
   /* Código para seleção de temperatura e tempo do ar condicionado */
     registerAcControls(vin) {
-    const temperatureOptions = [
+    const legacyKeys = [
+        `select_${vin.toLowerCase()}_ac_temperature`,
+        `select_${vin.toLowerCase()}_ac_duration`
+      ];
+
+      legacyKeys.forEach((key) => {
+        delete topicsAndActions[key];
+        delete topicsToSubscribe[key];
+      });
+      const temperatureOptions = [
       "16", "17", "18", "19", "20",
       "21", "22", "23", "24", "25",
       "26", "27", "28", "29", "30"
