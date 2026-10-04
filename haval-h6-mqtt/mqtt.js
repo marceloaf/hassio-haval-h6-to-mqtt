@@ -217,7 +217,7 @@ const mqttModule = {
 
     const controls = [
       {
-        code: "ac_temperature",
+        code: "temperatura_do_ar_condicionado",
         name: "Temperatura do ar condicionado",
         icon: "mdi:thermometer",
         options: temperatureOptions,
@@ -225,7 +225,7 @@ const mqttModule = {
         action: "setAcTemperature"
       },
       {
-        code: "ac_duration",
+        code: "duracao_do_ar_condicionado",
         name: "Duração do ar condicionado",
         icon: "mdi:timer-outline",
         options: durationOptions,
@@ -405,11 +405,6 @@ const ActionableAndLink = {
                 const temperature = getAcTemperature(vin);
                 const duration = getAcDuration(vin);
               
-                printLog(
-                  LogType.INFO,
-                  `AC SETTINGS -> VIN=${vin}, temperature=${temperature}, duration=${duration}`
-                );
-                
                 return await carConnector.carUtil.airConditioner(
                   carConnector.Actions.AirCon.TURN_ON,
                   vin,
