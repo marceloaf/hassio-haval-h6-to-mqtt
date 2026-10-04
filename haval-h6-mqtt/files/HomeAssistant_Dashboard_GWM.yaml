@@ -5,7 +5,7 @@ views:
   - type: panel
     path: gwm-dashboard
     title: GWM Dashboard
-    icon: mdi:car-electric-outline
+    icon: mdi:car-electric
     cards:
       - type: custom:config-template-card
         entities:
@@ -1615,8 +1615,7 @@ views:
                           states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_purificador_de_ar'].state
                           === 'off' ? 'Desligado' :
                           states['binary_sensor.gwmbrasil_'+VEICULO.toLowerCase()+'_estado_do_purificador_de_ar'].state
-                          === 'on' ? 'Ligado' : 'Desconhecido'
-                        }
+                          === 'on' ? 'Ligado' : 'Desconhecido'}
                       card_mod:
                         style: |
                           :host {
@@ -1894,8 +1893,6 @@ views:
                       referrerPolicy: origin-when-cross-origin
                     entities:
                       - entity: device_tracker.gwmbrasil_${VEICULO}
-                      - entity: zone.bamaq_gwm
-                      - entity: zone.home
                     theme_mode: auto
                     default_zoom: 16
                     hours_to_show: 24
@@ -2589,7 +2586,7 @@ views:
                   position: absolute;
                   height: 80px !important;
                   width: 80%;
-                  top: 125px;
+                  top: 75px;
                   right: 10px;
                   max-width: 450px;
                   color: white;
@@ -2608,7 +2605,7 @@ views:
               type: custom:map-card
               history_date_selection: true
               tile_layer_options:
-                referrerPolicy: origin-when-cross-origin
+                referrerPolicy: "origin-when-cross-origin"
               card_mod:
                 style: |
                   ha-card {
@@ -2634,6 +2631,3 @@ views:
       - type: iframe
         aspect_ratio: 100%
         url: https://br-h5-abroad-community.gwmcloud.com/br-vr/?name=NOVOH6PHEV19
-    visible:
-      - user: a1f9eaea0fc4461181bb340cd18d4a91
-      - user: c7cd847201474db28650cc0086d669f4
