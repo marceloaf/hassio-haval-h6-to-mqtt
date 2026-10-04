@@ -1,5 +1,5 @@
 # Changelog
-## [1.0.9] - 2026-10-03
+## [1.0.10.2] - 2026-10-04
 ## Modificado
 - Acrescentado comando para desligar o ar condicionado
 - Acrescentadas opções para definir temperatura e tempo quando o ar-condicionado é ligado

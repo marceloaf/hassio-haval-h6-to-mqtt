@@ -185,10 +185,31 @@ validationSchema.validate(process.env)
         if (data && data.items) {
           printLog(LogType.STARTUP, "    Registering entities");
           //---------------------
-          Object.keys(sensorTopics).forEach((code) => {
-            var { description, unit, device_class, entity_type, icon, actionable, state_class } = sensorTopics[code];
 
-            register(entityType = EntityType[entity_type.toUpperCase()],
+          const availableCodes = new Set(
+            data.items.map(item => String(item.code))
+          );
+
+          Object.keys(sensorTopics).forEach((code) => {
+
+            // Para o Haval H6, só registra temperatura da cabine
+            // se o datapoint 2201001 realmente vier da API
+            if (code === "2201001" && !availableCodes.has("2201001")) {
+              return;
+            }
+
+            var {
+              description,
+              unit,
+              device_class,
+              entity_type,
+              icon,
+              actionable,
+              state_class
+            } = sensorTopics[code];
+
+            register(
+              entityType = EntityType[entity_type.toUpperCase()],
               vin = _vin,
               code = code,
               entity_name = description,
@@ -197,7 +218,8 @@ validationSchema.validate(process.env)
               icon = icon,
               actionable = actionable,
               initial_value = null,
-              state_class = state_class);
+              state_class = state_class
+            );
           });
 
           data.items.forEach(({ code, value }) => {
