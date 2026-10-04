@@ -3,6 +3,7 @@
 ## Modificado
 - Acrescentado comando para desligar o ar condicionado
 - Acrescentadas opções para definir temperatura e tempo quando o ar-condicionado é ligado
+- O sensor de temperatura da cabine deixa de aparecer caso não tenha venha valor da API
 
 ## [1.0.8] - 2026-08-27
 ## Modificado
