@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.9.2] - 2026-10-06
+### Consertado
+- Leituras numéricas inválidas são publicadas como `None` na origem, substituindo valores inválidos retidos no MQTT na próxima atualização dos sensores.
+
 ## [1.0.9.1] - 2026-10-06
 ### Consertado
 - Valores inválidos, como `--`, passam a indicar estado desconhecido nos sensores numéricos MQTT, corrigindo o erro do sensor Tempo de Carga no Home Assistant.

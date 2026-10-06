@@ -2,6 +2,7 @@ const mqtt = require("mqtt");
 var slugify = require("slugify");
 const carConnector = require("./carConnector");
 const storage = require("./storage");
+const { sensorTopics } = require("./map");
 const { LogType, printLog } = require('./utils');
 
 const prefix = 'gwmbrasil';
@@ -336,8 +337,18 @@ const mqttModule = {
   },
   sendMessage(vin, code, value, retain = true) {
     const topic = `${prefix}_${vin.toLowerCase()}/${code.toLowerCase()}/state`;
+    const sensor = sensorTopics[code];
+    let payload = String(value);
+    if (sensor && sensor.entity_type === EntityType.SENSOR && (sensor.unit || sensor.state_class)) {
+      // Sanitize at the source, including retained messages used after HA restarts.
+      const trimmed = payload.trim();
+      const isNumeric = (typeof value === "number" || typeof value === "string") &&
+        /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(trimmed) &&
+        Number.isFinite(Number(trimmed));
+      payload = isNumeric ? trimmed : "None";
+    }
 
-    mqttModule.sendMqtt(topic, String(value), { retain });
+    mqttModule.sendMqtt(topic, payload, { retain });
   },
 };
 
