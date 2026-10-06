@@ -127,6 +127,12 @@ const mqttModule = {
       payload.json_attributes_topic = `homeassistant/${entityType.toLowerCase()}/${prefix}_${vin.toLowerCase()}_${code.toLowerCase()}/attributes`;
     }
 
+    if (entityType === EntityType.SENSOR && (payload.unit_of_measurement || payload.state_class)) {
+      // The vehicle API can return placeholders such as "--" for missing readings.
+      // MQTT numeric sensors accept "None" to represent an unknown state.
+      payload.value_template = "{{ value if is_number(value) else 'None' }}";
+    }
+
     if (entityType === EntityType.DEVICE_TRACKER) {
       topic = `homeassistant/device_tracker/${prefix}_${vin.toLowerCase()}/config`;
       payload.unique_id = `${prefix}_${vin.toLowerCase()}`;

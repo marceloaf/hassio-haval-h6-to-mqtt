@@ -1,4 +1,9 @@
 # Changelog
+
+## [1.0.9.1] - 2026-10-06
+### Consertado
+- Valores inválidos, como `--`, passam a indicar estado desconhecido nos sensores numéricos MQTT, corrigindo o erro do sensor Tempo de Carga no Home Assistant.
+
 ## [1.0.9] - 2026-10-04
 ## Modificado
 - Acrescentado comando para desligar o ar condicionado
