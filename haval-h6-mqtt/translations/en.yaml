@@ -7,6 +7,9 @@ configuration:
     description: "The email address used during registration."
   gwm_password:
     name: "'My GWM' App Password"
+  gwm_verification_code:
+    name: "GWM verification code (temporary)"
+    description: "After the first start, enter the emailed code, save and restart the add-on. Remove the code after signing in. Use a dedicated account for Home Assistant."
   gwm_vin:
     name: "Default Vehicle Chassis"
     description: "Check in the app or on the invoice."

@@ -7,6 +7,9 @@ configuration:
     description: "O endereço de e-mail utilizado no cadastro."
   gwm_password:
     name: "Senha do aplicativo 'My GWM'"
+  gwm_verification_code:
+    name: "Código de verificação GWM (temporário)"
+    description: "Após o primeiro início, informe o código recebido por e-mail, salve e reinicie o add-on. Remova o código após autenticar. Use uma conta exclusiva para o Home Assistant."
   gwm_vin:
     name: "Chassis do veículo principal"
     description: "Verifique no aplicativo ou na nota fiscal."

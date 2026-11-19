@@ -6,6 +6,7 @@ module.exports = yup.object({
   MQTT_PASS: yup.string('MQTT password configured in your broker'),
   MQTT_USER: yup.string('MQTT user configured in your broker'),
   USERNAME: yup.string().required('Username from "My GWM" app'),
+  GWM_VERIFICATION_CODE: yup.string().max(64),
   PASSWORD: yup.string().required('Password from "My GWM" app'),
   VIN: yup.string().required('Vehicle identification number.'),
   PIN: yup.string('PIN code from "My GWM" application'),

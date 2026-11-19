@@ -1,15 +1,16 @@
-const fs = require("fs");
 const axios = require("axios");
-const https = require("https");
 const md5 = require("md5");
 const slugify = require("slugify");
 const storage = require("./storage");
 const carTextUtil = require("./carTextUtil");
-const { isTokenExpired, LogType, printLog } = require('./utils');
+const { LogType, printLog } = require('./utils');
 const { sensorTopics } = require("./map");
 const { error } = require("console");
 
-const { USERNAME, PASSWORD, PIN } = process.env;
+const { USERNAME, PASSWORD, PIN, GWM_VERIFICATION_CODE } = process.env;
+const { createGwmApi } = require("./gwmApi");
+const api = createGwmApi({ transport: axios, storage, username: USERNAME, password: PASSWORD, verificationCode: GWM_VERIFICATION_CODE });
+const auth = () => api.ensureSession();
 
 const Actions = {
     Doors: { OPEN: "1", CLOSE: "2" },
@@ -34,8 +35,7 @@ const Options = {
 };
 
 const Endpoints = {
-    apiVehicle: "https://br-app-gateway.gwmcloud.com/app-api/api/v1.0",
-    apiLogin: "https://br-front-service.gwmcloud.com/br-official-commerce/br-official-gateway/pc-api/api/v1.0/userAuth/loginAccount"
+    apiVehicle: "https://br-app-gateway.gwmcloud.com/app-api/api/v1.0"
 };
 
 const UserMessages = {
@@ -94,99 +94,10 @@ const Services = {
     slindingDoor: { code: "0x22", description: "Controle da porta deslizante" },
 };
 
-async function auth() {
-    let { accessToken, refreshToken } = "";
-
-    accessToken = storage.getItem("accessToken");
-    refreshToken = storage.getItem("refreshToken");
-
-    if (accessToken && !isTokenExpired(accessToken))
-        return { accessToken, refreshToken };
-
-    const deviceid = storage.getItem("deviceid") ? storage.getItem("deviceid") : md5(Math.random().toString());
-    storage.setItem("deviceid", deviceid);
-
-    const params = { deviceid, password: md5(PASSWORD), account: USERNAME };
-
-    const userHeaders = {
-        appid: "6",
-        brand: "6",
-        brandid: "CCZ001",
-        country: "BR",
-        devicetype: "0",
-        enterpriseid: "CC01",
-        gwid: "",
-        language: "pt_BR",
-        rs: "5",
-        terminal: "GW_PC_GWM",
-    };
-
-    try {
-        const { data } = await axios.post(Endpoints.apiLogin, params, { headers: userHeaders });
-
-        if (data.description === "SUCCESS") {
-            Object.keys(data.data).forEach((key) => {
-                if (key === "accessToken")
-                    accessToken = data.data[key];
-
-                if (key === "refreshToken")
-                    refreshToken = data.data[key];
-            });
-            return { accessToken, refreshToken };
-        }
-        throw data;
-    } catch (err) {
-        printLog(LogType.ERROR, `---${UserMessages.ERROR_AUTHENTICATION_LOG}---`, err);
-        throw new Error(UserMessages.ERROR_AUTHENTICATION);
-    }
-};
-
-let headers = {}
-
-async function updateHeaders() {
-    if (headers.accessToken && axios.defaults.httpsAgent)
-        return;
-    let { certData, certKey, ca } = "";
-    try {
-        certData = fs.readFileSync("./certs/gwm_general.cer", { encoding: "utf8" });
-        certKey = fs.readFileSync("./certs/gwm_general.key", { encoding: "utf8" });
-        ca = fs.readFileSync("./certs/gwm_root.cer", { encoding: "utf8" });
-    }
-    catch (error) {
-        printLog(LogType.ERROR, UserMessages.ERROR_READING_CERTIFICATES, error);
-        return null;
-    }
-
-    const httpsAgent = new https.Agent({
-        cert: certData,
-        ca: ca,
-        key: certKey,
-        rejectUnauthorized: false,
-        ciphers: "DEFAULT:@SECLEVEL=0",
-    });
-
-    axios.defaults.httpsAgent = httpsAgent;
-
-    const { accessToken, refreshToken } = await auth();
-
-    headers = {
-        rs: "2",
-        terminal: "GW_APP_GWM",
-        brand: "6",
-        language: "pt_BR",
-        systemtype: "2",
-        regioncode: "BR",
-        country: "BR",
-        accessToken: accessToken,
-        refreshToken: refreshToken
-    };
-}
-
 async function getLastCommandResult(seqNo, vin) {
     try {
-        const { data } = await axios.get(
+        const { data } = await api.get(
             `${Endpoints.apiVehicle}/vehicle/getRemoteCtrlResultT5?seqNo=${seqNo}&vin=${vin}`,
-            { headers }
         );
 
         if (data && data.data && data.description === "SUCCESS") {
@@ -197,7 +108,7 @@ async function getLastCommandResult(seqNo, vin) {
         }
         return null;
     } catch (e) {
-        printLog(LogType.ERROR, `---${UserMessages.ERROR_RETRIEVING_COMMAND_STATUS}---`, e);
+        printLog(LogType.ERROR, `---${UserMessages.ERROR_RETRIEVING_COMMAND_STATUS}---`, e.message);
         return null;
     }
 }
@@ -247,14 +158,13 @@ async function sendCmd(instructions, vin) {
         lastCommands[vin] = { seqNo, timestamp: currentTime };
         storage.setItem("lastCommands", JSON.stringify(lastCommands));
 
-        const options = { headers };
         const remoteType = 0;
         const securityPassword = md5(PIN);
         const type = 2;
 
-        await updateHeaders();
+        await api.ensureSession();
 
-        const res = await axios.post(
+        const res = await api.post(
             `${Endpoints.apiVehicle}/vehicle/T5/sendCmd`,
             {
                 instructions,
@@ -264,13 +174,12 @@ async function sendCmd(instructions, vin) {
                 type,
                 vin
             },
-            options
         );
 
         printLog(LogType.DEBUG, `sendCmd returning data: ${Buffer.from(JSON.stringify(res.data)).toString('base64')}`);
         return res.data;
     } catch (err) {
-        printLog(LogType.ERROR, `---${UserMessages.ERROR_SENDING_COMMAND}---`, err);
+        printLog(LogType.ERROR, `---${UserMessages.ERROR_SENDING_COMMAND}---`, err.message);
         return {
             result: false,
             message: UserMessages.ERROR_SENDING_COMMAND
@@ -289,9 +198,6 @@ async function chargingSchedule(enable, vin) {
         const startTime = new Date().getTime() + startTimeAdd;
         const endTime = new Date().getTime() + endTimeAdd;
 
-        let options = {
-            headers,
-        };
 
         const body = {
             enable: enable,
@@ -302,15 +208,14 @@ async function chargingSchedule(enable, vin) {
             vin: vin
         };
 
-        const res = await axios.post(
+        const res = await api.post(
             `${Endpoints.apiVehicle}/vehicleCharge/setChargingPlan?vin=${vin}`,
             body,
-            options
         );
 
         return res.data;
     } catch (e) {
-        printLog(LogType.ERROR, `---${UserMessages.ERROR_SETTING_CHARGING}---`, e);
+        printLog(LogType.ERROR, `---${UserMessages.ERROR_SETTING_CHARGING}---`, e.message);
         return false;
     }
 }
@@ -342,29 +247,23 @@ function apiReturnHandle(returnData, functionName) {
 
 const carData = {
     async getCarList() {
-        try {
-            await updateHeaders();
-            const response = await axios.get(`${Endpoints.apiVehicle}/globalapp/vehicle/acquireVehicles`, { headers });
-            printLog(LogType.DEBUG, `getCarList returning data: ${Buffer.from(JSON.stringify(response.data)).toString('base64')}`);
-            return response;
-
-        } catch (e) {
-            printLog(LogType.ERROR, `---${UserMessages.ERROR_RETRIEVING_CAR_DATA}---`, e.Message);
-        }
+        const response = await api.get(`${Endpoints.apiVehicle}/globalapp/vehicle/acquireVehicles`);
+        printLog(LogType.DEBUG, `getCarList returning data: ${Buffer.from(JSON.stringify(response.data)).toString('base64')}`);
+        return response;
     },
     async getCarInfo(vin) {
         try {
-            await updateHeaders();
-            const { data } = await axios.get(`${Endpoints.apiVehicle}/vehicle/getLastStatus?vin=${String(vin).toUpperCase()}&flag=true`, { headers });
+            await api.ensureSession();
+            const { data } = await api.get(`${Endpoints.apiVehicle}/vehicle/getLastStatus?vin=${String(vin).toUpperCase()}&flag=true`);
             printLog(LogType.DEBUG, `getCarInfo returning data: ${Buffer.from(JSON.stringify(data.data)).toString('base64')}`);
             return data.data;
         } catch (e) {
-            printLog(LogType.ERROR, `---${UserMessages.ERROR_RETRIEVING_CAR_LIST}---`, e.Message);
+            printLog(LogType.ERROR, `---${UserMessages.ERROR_RETRIEVING_CAR_LIST}---`, e.message);
         }
     },
     async getStatus(vin) {
         try {
-            await updateHeaders();
+            await api.ensureSession();
             const data = await carData.getCarInfo(vin);
 
             let status = {};
@@ -399,13 +298,13 @@ const carData = {
             printLog(LogType.DEBUG, `getStatus returning data: ${Buffer.from(JSON.stringify(status)).toString('base64')}`);
             return status;
         } catch (e) {
-            printLog(LogType.ERROR, `---${UserMessages.ERROR_RETRIEVING_CAR_STATUS}---`, e);
+            printLog(LogType.ERROR, `---${UserMessages.ERROR_RETRIEVING_CAR_STATUS}---`, e.message);
             return UserMessages.ERROR_RETRIEVING_CAR_STATUS
         }
     },
     async getChargingLogs(vin) {
         try {
-            await updateHeaders();
+            await api.ensureSession();
 
             const body = {
                 vin: vin.toUpperCase(),
@@ -414,7 +313,7 @@ const carData = {
                 continuation: "0"
             };
 
-            const chargingLogs = await axios.post(`${Endpoints.apiVehicle}/vehicleCharge/getChargeLogs`, body, { headers });
+            const chargingLogs = await api.post(`${Endpoints.apiVehicle}/vehicleCharge/getChargeLogs`, body);
 
             if (chargingLogs && chargingLogs.data && chargingLogs.data.data.list && chargingLogs.data.data.list.length > 0) {
                 const formattedList = chargingLogs.data.data.list.map(({ startTime, endTime }) => {
@@ -485,7 +384,7 @@ const carUtil = {
 
             return apiReturnHandle(acData, "ar-condicionado");
         } catch (e) {
-            printLog(LogType.ERROR, UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "do", functionName: "ar-condicionado" }), e);
+            printLog(LogType.ERROR, UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "do", functionName: "ar-condicionado" }), e.message);
             return { result: false, message: UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "do", functionName: "ar-condicionado" }) };
         }
     },
@@ -510,7 +409,7 @@ const carUtil = {
 
             return apiReturnHandle(engineData, "motor");
         } catch (e) {
-            printLog(LogType.ERROR, UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "do", functionName: "motor" }), e);
+            printLog(LogType.ERROR, UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "do", functionName: "motor" }), e.message);
             return { result: false, message: UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "do", functionName: "motor" }), error: true };
         }
     },
@@ -572,7 +471,7 @@ const carUtil = {
 
             return apiReturnHandle(windowData, windowsOption === Options.Windows.SKYWINDOW ? "teto solar" : "janelas");
         } catch (e) {
-            printLog(LogType.ERROR, `---${UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "das", functionName: Options.Windows.SKYWINDOW ? "teto solar" : "janelas" })}---`, e);
+            printLog(LogType.ERROR, `---${UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "das", functionName: Options.Windows.SKYWINDOW ? "teto solar" : "janelas" })}---`, e.message);
             return { result: false, message: UserMessages.ERROR_EXECUTING_COMMAND({ preposition: "das", functionName: Options.Windows.SKYWINDOW ? "teto solar" : "janelas" }), error: true };
         }
     },
@@ -613,7 +512,7 @@ const carUtil = {
 
             return apiReturnHandle(doorData, doorsOption === Options.Doors.TRUNK ? "porta-malas" : "portas");
         } catch (e) {
-            printLog(LogType.ERROR, `---${UserMessages.ERROR_EXECUTING_COMMAND({ preposition: doorsOption === Options.Doors.TRUNK ? "do" : "das", functionName: doorsOption === Options.Doors.TRUNK ? "porta-malas" : "portas" })}---`, e);
+            printLog(LogType.ERROR, `---${UserMessages.ERROR_EXECUTING_COMMAND({ preposition: doorsOption === Options.Doors.TRUNK ? "do" : "das", functionName: doorsOption === Options.Doors.TRUNK ? "porta-malas" : "portas" })}---`, e.message);
             return { result: false, message: UserMessages.ERROR_EXECUTING_COMMAND({ preposition: doorsOption === Options.Doors.TRUNK ? "do" : "das", functionName: doorsOption === Options.Doors.TRUNK ? "porta-malas" : "portas" }), error: true };
         }
     },
