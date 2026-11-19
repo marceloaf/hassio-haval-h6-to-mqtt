@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.9.3] - 2026-11-19
+
+- Migra o login brasileiro para o fluxo do aplicativo My GWM, com assinatura por requisição e verificação por e-mail.
+- Adiciona a opção temporária `gwm_verification_code`; persiste dispositivo, sessão e verificação pendente entre reinícios.
+- Renova tokens pelo gateway H5 e trata conflito de sessão (607501) sem disputar login com o telefone.
+- Envia a cadeia completa do certificado de cliente, mantendo a validação HTTPS do servidor.
+- Assina consultas e comandos existentes sem repetir automaticamente comandos de resultado incerto.
+- Preserva tópicos MQTT, entidades e controles de temperatura/duração do ar-condicionado.
+- Inclui testes locais e instruções em [AUTHENTICATION_BR.md](AUTHENTICATION_BR.md).
+
 ## [1.0.9.2] - 2026-10-06
 ### Consertado
 - Leituras numéricas inválidas são publicadas como `None` na origem, substituindo valores inválidos retidos no MQTT na próxima atualização dos sensores.

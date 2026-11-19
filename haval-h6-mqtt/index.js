@@ -15,23 +15,35 @@ if (REFRESH_TIME < 5) {
 }
 
 const getCarList = async () => {
-  try {
+  // Keep startup pending while the user supplies the email verification code.
+  for (;;) {
+   try {
     const { data } = await carConnector.carData.getCarList();
     var carList;
     if (data)
       carList = data.data;
 
+    if (!Array.isArray(carList)) throw new Error("Resposta inválida na lista de veículos GWM.");
+    if (carList.length === 0) throw new Error("Nenhum veículo disponível nessa conta My GWM. Confira o compartilhamento do carro.");
     return carList;
-  } catch (e) {
+   } catch (e) {
     printLog(LogType.ERROR, "***Error retrieving car data: ", e.message);
+    await new Promise(resolve => setTimeout(resolve, 30000));
+   }
   }
 }
 
 const GetCarLastStatus = async (vin) => {
-  try {
-    return await carConnector.carData.getCarInfo(vin.toUpperCase());
-  } catch (e) {
-    printLog(LogType.ERROR, "***Error retrieving car info: ", e.message);
+  for (;;) {
+    try {
+      const data = await carConnector.carData.getCarInfo(vin.toUpperCase());
+      if (data && Array.isArray(data.items)) return data;
+      throw new Error("Aguardando dados válidos do veículo GWM.");
+    } catch (e) {
+      printLog(LogType.ERROR, "***Error retrieving car info: ", e.message);
+      if (storage.getItem('Startup') !== 'true') return;
+      await new Promise(resolve => setTimeout(resolve, 30000));
+    }
   }
 };
 
@@ -356,6 +368,7 @@ validationSchema.validate(process.env)
   });
 
 const updateState = async () => {
+  if (storage.getItem('Startup') === 'true') return;
   const vinList = storage.getItem('vinList') ? storage.getItem('vinList').split(',') : [];
 
   for (const vin of vinList) {
